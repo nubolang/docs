@@ -1,17 +1,339 @@
 ---
 title: Nubo ☁️
-description: A new real-time programming language for web.
+description: A small language for scripts, web routes, APIs, and HTML components.
 template: splash
 hero:
-  tagline: "Nubo is designed for easy and efficient interactive web apps. Fun fact: Nubo means Cloud in Esperanto."
+  tagline: "Write a file, run it, or serve it as a web app. Nubo is built for simple, interactive web development."
   image:
     file: ../../assets/nubo.webp
   actions:
-    - text: Getting Started
-      link: /guides/getting-started/
+    - text: Start in 60 seconds
+      link: /start/getting-started/
       icon: right-arrow
-    - text: Read the Nubo docs
+    - text: GitHub
       link: https://github.com/nubolang/nubo
       icon: external
       variant: minimal
 ---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## Write one file. Run it.
+
+Nubo starts simple. Create a `.nubo` file and run it directly.
+
+```tsx nubo title="hello.nubo"
+let name = "Nubo"
+
+println("Hello, " + name)
+```
+
+```bash
+nubo hello.nubo
+```
+
+```txt
+Hello, Nubo
+```
+
+No server. No framework. No project structure required.
+
+## Or serve the same idea on the web
+
+A `.nubo` file can also be an HTTP route.
+
+```tsx nubo title="index.nubo"
+import request from "@server/request"
+import response from "@server/response"
+
+let name = request.query("name")
+
+if isNil(name) {
+    name = "World"
+}
+
+response.write(<h1>Hello, { name }</h1>)
+```
+
+```bash
+nubo serve .
+```
+
+Open:
+
+```txt
+http://localhost:3000/?name=Nubo
+```
+
+Nubo gives you direct access to the request and response, so small web apps stay small.
+
+## Why try Nubo?
+
+<CardGrid>
+  <Card title="Fast to start" icon="rocket">
+    Run `nubo file.nubo` for scripts, or `nubo serve .` for a web app. The first useful program can be one file.
+  </Card>
+
+  <Card title="Web features built in" icon="seti:firefox">
+    Routes, request data, JSON responses, cookies, uploads, static files, and custom error pages are part of the Nubo server workflow.
+  </Card>
+
+  <Card title="Typed, but not noisy" icon="seti:default">
+    Let Nubo infer simple values, then add types for functions, lists, dictionaries, structs, interfaces, and function values when structure matters.
+  </Card>
+
+  <Card title="HTML is part of the language" icon="seti:html">
+    Return `html` values, build components, pass children, bind attributes, and compose pages without switching languages.
+  </Card>
+</CardGrid>
+
+## File-based routes
+
+Serve a folder and Nubo maps files to routes.
+
+```txt title="app/"
+index.nubo
+users/
+  [id].nubo
+error.nubo
+```
+
+Dynamic route params are available through `@server/request`.
+
+```tsx nubo title="app/users/[id].nubo"
+import request from "@server/request"
+import response from "@server/response"
+
+let id = request.param("id")
+
+response.json({
+    "id": id
+})
+```
+
+```txt
+GET /users/42
+```
+
+```json
+{
+  "id": "42"
+}
+```
+
+## JSON APIs without ceremony
+
+Read JSON from the request and return JSON from the response.
+
+```tsx nubo title="api/echo.nubo"
+import request from "@server/request"
+import response from "@server/response"
+
+if !request.is("POST") {
+    response.status(405)
+    response.json({
+        "error": "method not allowed"
+    })
+
+    return
+}
+
+let data = request.json()
+
+response.json({
+    "ok": true,
+    "received": data
+})
+```
+
+That is enough for small APIs, internal tools, prototypes, dashboards, and webhooks.
+
+## A type system that stays readable
+
+Nubo can infer types:
+
+```tsx nubo title="inferred.nubo"
+let title = "Dashboard"
+let count = 5
+let enabled = true
+```
+
+Add annotations where they help:
+
+```tsx nubo title="typed.nubo"
+let names: []string = ["Nubo", "Cloud"]
+
+let scores: dict[string, int] = {
+    "nubo": 100
+}
+```
+
+Create your own types:
+
+```tsx nubo title="user.nubo"
+struct User {
+    name: string
+    roles: []string
+}
+
+fn hasRole(user: User, role: string) bool {
+    return user.roles.includes(role)
+}
+```
+
+Function implementations use the return type after the parameter list:
+
+```tsx nubo title="functions.nubo"
+fn greet(name: string) string {
+    return "Hello, " + name
+}
+```
+
+Use `->` only for function value types:
+
+```tsx nubo title="function-values.nubo"
+let formatter: fn(string) -> string
+```
+
+## Components are just Nubo functions
+
+Use `@std/component` to build reusable HTML components.
+
+```tsx nubo title="button.nubo"
+import { Context } from "@std/component"
+
+fn Button(ctx: Context) html {
+    return <button class="btn">
+        { ctx.children.join(" ") }
+    </button>
+}
+```
+
+Then compose it like HTML:
+
+```tsx nubo title="page.nubo"
+let page = <main>
+    <h1>Nubo App</h1>
+    <Button>Save changes</Button>
+</main>
+
+println(page)
+```
+
+## Safe by default, raw when needed
+
+Normal interpolation escapes content.
+
+```tsx nubo title="safe-html.nubo"
+let name = <script>alert(1)</script>
+
+let safe = <p>{ name }</p>
+```
+
+Use `!{ ... }` only when you intentionally want raw HTML.
+
+```tsx nubo title="raw-html.nubo"
+let html = <strong>Nubo</strong>
+
+let raw = <p>!{ html }</p>
+```
+
+:::caution[Raw HTML disables XSS protection]
+
+`!{ ... }` disables XSS escaping for that value.
+
+Only use it with trusted content. Do not use it with query parameters, form fields, uploaded data, cookies, headers, or other user input.
+
+:::
+
+## Useful libraries included
+
+Nubo includes standard libraries for common app work.
+
+```tsx nubo title="stdlib.nubo"
+import http from "@std/http"
+import json from "@std/json"
+import sql from "@std/sql"
+import hash from "@std/hash"
+import io from "@std/io"
+import time from "@std/time"
+```
+
+Hash a password:
+
+```tsx nubo title="password.nubo"
+import hash from "@std/hash"
+
+let password = "secret"
+let hashed = hash.bcrypt(password)
+
+if hash.bcrypt.compare(password, hashed) {
+    println("password ok")
+}
+```
+
+Make an HTTP request:
+
+```tsx nubo title="http.nubo"
+import http from "@std/http"
+
+let res = http.base.request("GET", "https://example.com")
+
+println(res.status)
+println(res.body())
+```
+
+Run a process:
+
+```tsx nubo title="process.nubo"
+import process from "@std/process"
+
+let result = process.run("git", ["--version"])
+
+println(result.stdout)
+```
+
+## Install packages from GitHub
+
+Nubo can use packages from GitHub.
+
+```bash
+nubo get github.com/nubolang/color
+```
+
+```tsx nubo title="colors.nubo"
+import color from "github.com/nubolang/color"
+
+println(color.green("success"))
+println(color.yellow("warning"))
+println(color.red("error"))
+```
+
+## Good use cases
+
+<CardGrid>
+  <Card title="Small web apps" icon="seti:json">
+    Build pages, forms, dashboards, and APIs without pulling in a large framework.
+  </Card>
+
+  <Card title="Internal tools" icon="seti:db">
+    Connect HTTP, SQL, JSON, IO, processes, hashing, SSH, Telnet, or serial communication in a small codebase.
+  </Card>
+
+  <Card title="Prototypes" icon="rocket">
+    Try ideas quickly with file-based routes, simple types, and HTML returned directly from Nubo.
+  </Card>
+
+  <Card title="Scripts that can grow" icon="right-arrow">
+    Start with `nubo file.nubo`, then move the same code toward a server route or package when needed.
+  </Card>
+</CardGrid>
+
+## Start here
+
+```bash
+go install github.com/nubolang/nubo/cmd/nubo@latest
+nubo init
+nubo hello.nubo
+nubo serve .
+```
